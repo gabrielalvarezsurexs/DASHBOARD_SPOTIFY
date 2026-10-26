@@ -1,0 +1,132 @@
+# Stack del proyecto. Mismo set de herramientas visto en clase (DW y OLAP / KAFKA),
+# adaptado: MinIO como lakehouse, Spark para ETL, ClickHouse como capa de servicio.
+#
+#   docker compose up -d                          → core: minio, clickhouse, spark
+#   docker compose --profile streaming up -d      → + kafka, kafka-ui (replay)
+#   docker compose --profile explore up -d        → + metabase (exploración interna, NO es el dashboard final)
+#
+# Sin container_name a propósito: evita choques con los contenedores de otras tareas
+# (clickhouse, minio, kafka...) que ya existen en esta máquina.
+name: spotify
+
+services:
+  # ── Lakehouse ────────────────────────────────────────────────
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # API S3
+      - "9001:9001"   # consola web
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      retries: 20
+
+  # Crea los buckets de la arquitectura medallion y termina.
+  # La imagen del servidor ya trae el cliente `mc`.
+  minio-init:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
+      mc mb --ignore-existing local/bronze local/silver local/gold &&
+      echo 'buckets listos'
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+
+  # ── Procesamiento ────────────────────────────────────────────
+  # Misma imagen usada en "DW y OLAP". Sirve para notebooks y para spark-submit:
+  #   docker compose exec spark spark-submit --packages org.apache.hadoop:hadoop-aws:3.3.4 /home/jovyan/jobs/<job>.py
+  spark:
+    image: jupyter/pyspark-notebook:spark-3.5.0
+    user: "1000:100"
+    ports:
+      - "8888:8888"   # JupyterLab
+      - "4040:4040"   # Spark UI (mientras corre un job)
+    environment:
+      JUPYTER_ENABLE_LAB: "yes"
+      MINIO_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      DEFAULT_TZ: ${DEFAULT_TZ:-America/Mexico_City}
+    command: start-notebook.sh --NotebookApp.token=''
+    volumes:
+      - ./jobs:/home/jovyan/jobs
+      - ./notebooks:/home/jovyan/work
+      - ./data:/home/jovyan/data
+    depends_on:
+      - minio
+
+  # ── Serving / OLAP ───────────────────────────────────────────
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.8
+    ports:
+      - "8123:8123"   # HTTP (lo usa clickhouse-connect y el backend)
+      - "9010:9000"   # nativo (9000 lo ocupa MinIO)
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-spotify}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-spotify123}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-spotify}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+
+  # ── Streaming (perfil opcional) ──────────────────────────────
+  kafka:
+    image: apache/kafka:3.9.0
+    profiles: ["streaming"]
+    ports:
+      - "9094:9094"   # listener para el host (productor de replay con uv)
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_LISTENERS: "INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka:9092,EXTERNAL://localhost:9094"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      CLUSTER_ID: "c3BvdGlmeS1kYXNoYm9hcmQ"
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    profiles: ["streaming"]
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: spotify
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      - kafka
+
+  # ── Exploración interna (perfil opcional) ────────────────────
+  # Útil para validar números rápido contra ClickHouse. NO es el entregable:
+  # el dashboard final es propio (ver docs/design.md).
+  metabase:
+    image: metabase/metabase:v0.51.4
+    profiles: ["explore"]
+    ports:
+      - "3001:3000"
+    depends_on:
+      - clickhouse
+
+volumes:
+  minio-data:
+  clickhouse-data:

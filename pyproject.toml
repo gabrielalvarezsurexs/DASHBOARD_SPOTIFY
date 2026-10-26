@@ -1,0 +1,56 @@
+[project]
+name = "dashboard-spotify"
+version = "0.1.0"
+description = "Pipeline + dashboard sobre el Extended Streaming History de Spotify (Gabo y Javi)"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # Acceso a datos / formatos
+    "pyarrow>=17",
+    "polars>=1.10",
+    "duckdb>=1.1",          # EDA local rápido y validación sin levantar Docker
+    # Servicios del stack
+    "boto3>=1.35",          # MinIO (API S3)
+    "clickhouse-connect>=0.8",
+    "confluent-kafka>=2.6", # productor/consumidor de replay (kafka-python está roto en 3.12)
+    # Utilidades
+    "python-dotenv>=1.0",
+    "typer>=0.12",          # CLI de los scripts del pipeline
+    "rich>=13",
+    "python-docx>=1.2.0",
+    "markdown>=3.11.2",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.7",
+    "pytest>=8",
+    "jupyterlab>=4.2",
+    "ipykernel>=6.29",
+    "matplotlib>=3.9",      # solo para EDA en notebooks, nunca en el dashboard final
+]
+# Backend del dashboard. Se confirma en docs/decisiones.md (D1).
+dashboard = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+]
+# PySpark local solo para autocompletado / pruebas pequeñas.
+# Los jobs "oficiales" corren dentro del contenedor de Spark (ver docker-compose.yml).
+spark = [
+    "pyspark==3.5.3",
+]
+
+[tool.uv]
+default-groups = ["dev", "dashboard"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["data", "notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

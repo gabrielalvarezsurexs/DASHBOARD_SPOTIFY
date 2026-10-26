@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es-MX" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cómo escuchamos · Gabriel × Javier</title>
+<link rel="icon" href="img/spotify.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="hero">
+<header class="wrap masthead">
+  <div class="brand">
+    <img src="img/spotify.png" alt="Logo de Spotify">
+    <p class="kicker">Spotify · historial extendido · Big Data 2026</p>
+  </div>
+  <h1>Cómo escuchamos</h1>
+  <p class="dek" id="dek"></p>
+  <div class="profiles" id="profiles"></div>
+</header>
+</div>
+
+<div class="filters-bar">
+  <nav class="wrap filters" aria-label="Filtros del dashboard">
+    <div class="filter" role="group" aria-label="Persona" id="f-person"></div>
+    <label class="filter">
+      <span class="filter-label">Periodo</span>
+      <select id="f-period"></select>
+    </label>
+    <label class="filter check">
+      <input type="checkbox" id="f-streams">
+      <span>Solo streams (≥ 30 s)</span>
+    </label>
+    <ol class="toc" aria-label="Capítulos">
+      <li><a href="#c0">00 Cara a cara</a></li>
+      <li><a href="#c1">01 Ritmo</a></li>
+      <li><a href="#c2">02 Lo más denso</a></li>
+      <li><a href="#c3">03 Lo que saltamos</a></li>
+      <li><a href="#c4">04 En común</a></li>
+      <li><a href="#c5">05 Contexto</a></li>
+    </ol>
+    <button type="button" class="theme" id="f-theme" aria-pressed="false">Modo oscuro</button>
+  </nav>
+  <p class="wrap print-only" id="print-filters"></p>
+</div>
+
+<main>
+  <section class="wrap chapter" id="c0" aria-labelledby="h1-c0">
+    <header class="chapter-head">
+      <p class="num">00 · Cara a cara · ¿En qué nos parecemos y en qué no?</p>
+      <h2 class="headline" id="h1-c0"></h2>
+      <p class="context" id="ctx-c0"></p>
+    </header>
+    <div class="grid">
+      <div class="span-7" id="ch-versus"></div>
+      <div class="span-5" id="ch-insights"></div>
+    </div>
+  </section>
+
+  <section class="wrap chapter" id="c1" aria-labelledby="h1-c1">
+    <header class="chapter-head">
+      <p class="num">01 · Ritmo · ¿Cuándo somos más activos?</p>
+      <h2 class="headline" id="h1-c1"></h2>
+      <p class="context" id="ctx-c1"></p>
+    </header>
+    <div class="grid" id="g-heat"></div>
+    <div class="grid"><div class="span-12" id="ch-monthly"></div></div>
+  </section>
+
+  <section class="wrap chapter" id="c2" aria-labelledby="h1-c2">
+    <header class="chapter-head">
+      <p class="num">02 · Lo más denso · ¿Cuáles son nuestras interacciones más intensas?</p>
+      <h2 class="headline" id="h1-c2"></h2>
+      <p class="context" id="ctx-c2"></p>
+    </header>
+    <div class="grid" id="g-artists"></div>
+    <div class="grid">
+      <div class="span-12 artist-picker">
+        <label for="f-artist">Ficha de artista</label>
+        <input id="f-artist" list="artist-list" placeholder="Escribe un artista o haz clic en una barra" autocomplete="off">
+        <datalist id="artist-list"></datalist>
+        <button type="button" id="f-artist-clear">Quitar</button>
+      </div>
+      <div class="span-12" id="ch-artist"></div>
+    </div>
+    <div class="grid" id="g-tracks"></div>
+    <div class="grid"><div class="span-12" id="ch-eras"></div></div>
+  </section>
+
+  <section class="wrap chapter" id="c3" aria-labelledby="h1-c3">
+    <header class="chapter-head">
+      <p class="num">03 · Lo que saltamos · ¿Cuáles son nuestras interacciones menos densas?</p>
+      <h2 class="headline" id="h1-c3"></h2>
+      <p class="context" id="ctx-c3"></p>
+    </header>
+    <div class="grid">
+      <div class="span-7" id="ch-skip-hour"></div>
+      <div class="span-5" id="ch-skip-shuffle"></div>
+    </div>
+    <div class="grid" id="g-skipped"></div>
+  </section>
+
+  <section class="wrap chapter" id="c4" aria-labelledby="h1-c4">
+    <header class="chapter-head">
+      <p class="num">04 · En común · ¿Qué tanto nos parecemos?</p>
+      <h2 class="headline" id="h1-c4"></h2>
+      <p class="context" id="ctx-c4"></p>
+    </header>
+    <div class="grid">
+      <div class="span-8" id="ch-shared"></div>
+      <div class="span-4" id="ch-shared-stats"></div>
+    </div>
+  </section>
+
+  <section class="wrap chapter" id="c5" aria-labelledby="h1-c5">
+    <header class="chapter-head">
+      <p class="num">05 · Contexto · ¿Dónde y en qué escuchamos?</p>
+      <h2 class="headline" id="h1-c5"></h2>
+      <p class="context" id="ctx-c5"></p>
+    </header>
+    <div class="grid"><div class="span-12" id="ch-trips"></div></div>
+    <div class="grid">
+      <div class="span-6" id="ch-platform"></div>
+      <div class="span-6" id="ch-podcasts"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap colophon">
+  <p><b>Cómo se calcula.</b> La hora es local, según el país de conexión (México → America/Mexico_City). Un <i>stream</i> es una reproducción de 30 s o más. Un <i>skip</i> es el campo <code>skipped</code> de Spotify. La ventana común empieza en julio de 2023, cuando los dos tienen datos continuos. Los porcentajes de cada persona son sobre su propio tiempo. No se usa la IP: se elimina antes de cualquier cálculo.</p>
+  <p id="generated"></p>
+</footer>
+
+<script>
+  // Si algo falla durante la demo, que se vea en la página y no solo en la consola
+  addEventListener("error", (e) => document.body.insertAdjacentHTML("afterbegin",
+    `<pre class="wrap error">Error: ${e.message} (${(e.filename || "").split("/").pop()}:${e.lineno})</pre>`));
+</script>
+<script src="vendor/d3.min.js"></script>
+<script src="vendor/plot.umd.min.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+# ── Datos crudos: NUNCA al repo ─────────────────────────────────
+# Los exports de Spotify incluyen ip_addr. Los derivados (dashboard/web/data.js, informe/fig,
+# out/) sí se suben: no tienen IP y el equipo aceptó publicarlos para que el dashboard abra
+# directo al clonar.
+data/*
+!data/README.md
+*.zip
+out/*.html
+
+# Volúmenes de servicios (Docker)
+.volumes/
+
+# ── Python / uv ────────────────────────────────────────────────
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+spark-warehouse/
+metastore_db/
+derby.log
+
+# ── Frontend ───────────────────────────────────────────────────
+node_modules/
+dist/
+.vite/
+
+# ── Secretos ───────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Editor / SO ────────────────────────────────────────────────
+.history/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude Code (settings personales)
+.claude/settings.local.json
